@@ -1,1 +1,1 @@
-# adawac
+# Adaptively Weighted Augmentation Consistency (AdaWAC)
