@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from configs import get_basic_config, get_transunet_config, get_unet_config, get_synapse_config, get_acdc_config
 from datasets.dataset_aug import get_train_loader, get_test_loader
 from datasets.dataset_acdc import BaseDataSets as ACDC_dataset
-from models import UNETS_AW_AC
+from models import UNETS_AW_AC, UNETS_BASE
 from utils import test_single_volume
 
 import wandb
@@ -75,7 +75,6 @@ def train():
     config = data_config[config.dataset](config)
     config = arch_config[config.model](config)
     config = get_basic_config(config)
-    print("config", config)
 
     config: Any
 
@@ -102,7 +101,7 @@ def train():
         db_val, valloader = None, None
 
     # model
-    model = UNETS_AW_AC(config=config)
+    model = UNETS_AW_AC(config=config) if config.data_choice == 'pair' else UNETS_BASE(config=config)
 
     # optimizer
     optimizer = torch.optim.SGD(model.parameters(), lr=config.lr, weight_decay=config.wd, momentum=config.momentum)

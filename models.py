@@ -24,7 +24,7 @@ class UNETS_AW_AC(nn.Module):
         PAIR_MODEL = {"transunet": TransUnetLatent, "unet": UNetLatent}
         self.model = PAIR_MODEL[config._MODEL](
             config, config.img_size, config.num_classes
-        ).cuda()
+        )
 
         self.weights = (torch.ones(config.num_samples, 2) / 2.0).cuda()
         self.ratio = (
@@ -74,7 +74,7 @@ class UNETS_AW_AC(nn.Module):
                 weights = F.normalize(weights, p=1, dim=1)
                 self.weights[idx1] = weights
             elif self.config.loss == "trim-train":
-                label_sum = torch.sum(y1, dim=[1, 2]).detach()
+                label_sum = torch.sum(y1, dim=[1, 2]).clone().detach()
                 mask = label_sum.gt(0).to(torch.float32)
             elif self.config.loss == "trim-ratio":
                 thre = torch.quantile(loss_ce_, self.ratio)
@@ -148,6 +148,7 @@ class UNETS_BASE(nn.Module):
         self.model = PLAIN_MODEL[config._MODEL](
             config, config.img_size, config.num_classes
         )
+        self.weights = torch.zeros(config.num_samples, 2).cuda()
 
         # define losses
         self.ratio = (
@@ -167,13 +168,13 @@ class UNETS_BASE(nn.Module):
 
         # just for recording consistency
         logits_ = logits.clone().detach()
-        weights_ = torch.zeros(self.config.num_samples, 2)
+        weights_ = self.weights[idx].clone().detach()
         dac_reg_ = torch.zeros_like(loss_ce)
 
         if "trim" in self.config.loss:
             mask = None
             if self.config.loss == "trim-train":
-                label_sum = torch.sum(y, dim=[1, 2]).detach()
+                label_sum = torch.sum(y, dim=[1, 2]).clone().detach()
                 mask = label_sum.gt(0).to(torch.float32)
             elif self.config.loss == "trim-ratio":
                 thre = torch.quantile(loss_ce_, self.ratio)

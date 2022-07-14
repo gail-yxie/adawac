@@ -85,4 +85,4 @@ class Synapse_dataset(Dataset):
             sample = self.transform(sample)
         sample["case_name"] = self.sample_list[idx].strip("\n")
         sample["idx"] = idx
-        return sample, None
+        return sample, sample

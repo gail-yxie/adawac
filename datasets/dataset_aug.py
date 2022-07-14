@@ -16,7 +16,8 @@ import h5py
 
 def get_train_loader(config):
     if config.data_choice == "single":
-        dataset = config.Dataset(config)
+        transform = transforms.Compose([RandomGenerator([config.img_size, config.img_size])])
+        dataset = config.Dataset(config.base_dir, config.list_dir, "train", transform)
     else:
         dataset = config.TrainingPair(config)
     print("Train set length = {:d}".format(len(dataset)))

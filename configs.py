@@ -142,7 +142,6 @@ def get_transunet_config(config):
             int(config.img_size / config.patch_size),
             int(config.img_size / config.patch_size),
         )
-        print("build size", config.img_size, config.patch_size, config.patches.grid)
 
     config._MODEL = "transunet"
     return config
