@@ -6,13 +6,13 @@ import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from configs import get_basic_config, get_transunet_config, get_unet_config, get_synapse_config, get_acdc_config
-from models import UNETS_AW_AC
+from models import UNETS_AW_AC, UNETS_BASE
 from train_dac import inference
 import os
 
 import wandb
 
-# train
+# test
 def test():
     parser = argparse.ArgumentParser(description='Volumetric Medical Image Segmentation')
     # dataset
@@ -42,6 +42,7 @@ def test():
     parser.add_argument('--vit-name', type=str, default='R50-ViT-B_16', help='select one vit model')
     parser.add_argument('--vit-patches-size', type=int, default=16, help='vit_patches_size, default is 16')
     parser.add_argument('--img-size', default=224, type=int, help='Input image size to model (independent of raw image size)')
+    parser.add_argument('--data-choice', type=str, default='pair', choices=['pair', 'single'], help='choose pair or single')
 
     # loss
     parser.add_argument('--loss', type=str, default='base', 
@@ -82,7 +83,7 @@ def test():
     torch.cuda.manual_seed(config.seed)
     
     # load model
-    model = UNETS_AW_AC(config=config)
+    model = UNETS_AW_AC(config=config) if config.data_choice == 'pair' else UNETS_BASE(config=config)
     model_name = 'model_last.pth' if config.dataset == 'Synapse' else 'best_model.pth'
     save_model_path = os.path.join(config.results_dir, model_name)
     if config.dataset == 'Synapse':
