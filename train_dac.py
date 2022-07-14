@@ -269,7 +269,7 @@ def adjust_learning_rate(optimizer, epoch, config, iter_num, batch):
 def valid_epoch(model, config, valloader, db_val, best_performance, epoch, best_epoch):
     model.eval()
     metric_list = 0.0
-    for _, sampled_batch in enumerate(valloader):
+    for _, (sampled_batch, _) in enumerate(valloader):
         image, label = sampled_batch["image"], sampled_batch["label"]
         metric_i = test_single_volume(
             image,
@@ -333,7 +333,7 @@ def inference(model, config, metric_choice="modified"):
     # testing
     model.eval()
     metric_list = 0.0
-    for i_batch, sampled_batch in tqdm(enumerate(testloader)):
+    for i_batch, (sampled_batch, _) in tqdm(enumerate(testloader)):
         h, w = sampled_batch["image"].size()[2:]
         image, label, case_name = sampled_batch["image"], sampled_batch["label"], sampled_batch['case_name'][0]
         metric_i = test_single_volume( image,
