@@ -41,7 +41,7 @@ class BaseDataSets(Dataset):
             sample = {"image": image, "label": label}
         sample["idx"] = idx
         sample["case_name"] = case.replace(".h5", "")
-        return sample
+        return sample, None
 
 
 def random_rot_flip(image, label):

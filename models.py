@@ -6,9 +6,10 @@ from utils import DiceLossFull
 
 # TransUNet
 from networks.transunet_model import TransUnetLatent
+from networks.vit_seg_modeling import VisionTransformer as TransUNet
 
 # UNet
-from networks.unet_model import UNetLatent
+from networks.unet_model import UNetLatent, UNet
 
 
 class UNETS_AW_AC(nn.Module):
@@ -20,12 +21,11 @@ class UNETS_AW_AC(nn.Module):
         self.dac_loss = nn.MSELoss(reduction="none")
         self.dac_coef = [config.dac_encoder]
 
-        MODEL = {"transunet": TransUnetLatent, "unet": UNetLatent}
-
-        self.model = MODEL[config._MODEL](config, config.img_size, config.num_classes)
+        PAIR_MODEL = {"transunet": TransUnetLatent, "unet": UNetLatent}
+        self.model = PAIR_MODEL[config._MODEL](config, config.img_size, config.num_classes).cuda()
+        
         self.weights = (torch.ones(config.num_samples, 2) / 2.0).cuda()
-        self.ratio = config.trim_ratio
-        if self.ratio < 0: self.ratio = 1 - 1280 / 2211 # default trim ratio for Synapse
+        self.ratio = config.trim_ratio if config.trim_ratio >= 0 else 1 - 1280 / 2211 # default trim ratio for Synapse
 
     def forward(self, x1, y1, idx1, x2, y2, idx2):
         """
@@ -111,3 +111,62 @@ class UNETS_AW_AC(nn.Module):
 
     def load_from(self, config):
         self.model.load_from(config)
+
+
+# model with plain dataloader to load single data instead of pair data
+class UNETS_BASE(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        self.dice_loss = DiceLossFull(config)
+        self.ce_loss = nn.CrossEntropyLoss(reduction="none")
+
+        PLAIN_MODEL = {"transunet": TransUNet, "unet": UNet}
+        self.model = PLAIN_MODEL[config._MODEL](config, config.img_size, config.num_classes)
+        
+        # define losses
+        self.ratio = config.trim_ratio if config.trim_ratio >= 0 else 1 - 1280 / 2211 # default trim ratio for Synapse
+    
+    def forward(self, x, y, idx,  x2, y2, idx2):
+        # We can use this for simplicity, but here we use the original model to reproduce the results
+        # logits = self.model(x, return_latent=False)
+        logits = self.model(x)
+        loss_ce = torch.mean(self.ce_loss(logits, y.long()), dim=[1, 2])
+        loss_ce_ = loss_ce.clone().detach()
+
+        loss_dice = self.dice_loss(logits, y, softmax=True)
+        loss_dice_ = loss_dice.clone().detach()
+        batch_num = x.shape[0]
+
+
+        # just for recording consistency
+        logits_ = logits.clone().detach()
+        weights_ = (torch.zeros(self.config.num_samples, 2))
+        dac_reg_ = torch.zeros_like(loss_ce)
+
+        if "trim" in self.config.loss:
+            mask = None
+            if self.config.loss == "trim-train":
+                label_sum = torch.sum(y, dim=[1, 2]).detach()
+                mask = label_sum.gt(0).to(torch.float32)
+            elif self.config.loss == "trim-ratio":
+                thre = torch.quantile(loss_ce_, self.ratio)
+                mask = loss_ce_.gt(thre).to(torch.float32)
+            else:
+                raise ValueError("Unknown loss type: {}".format(self.config.loss))
+
+            assert mask is not None
+            batch_num = sum(mask).item()  # type: ignore
+            loss = (self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * loss_ce) * mask
+            loss = torch.sum(loss) / batch_num if batch_num != 0 else 0.0 * torch.sum(loss)
+        else:
+            loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * loss_ce
+            loss = torch.mean(loss)
+
+        return loss, loss_ce_, loss_dice_, dac_reg_, weights_, logits_, batch_num
+
+    def load_from(self, config):
+        self.model.load_from(config)
+
+
+    

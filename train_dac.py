@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 from configs import get_basic_config, get_transunet_config, get_unet_config, get_synapse_config, get_acdc_config
-from datasets.dataset_aug import get_train_pair_loader, get_test_loader
+from datasets.dataset_aug import get_train_loader, get_test_loader
 from datasets.dataset_acdc import BaseDataSets as ACDC_dataset
 from models import UNETS_AW_AC
 from utils import test_single_volume
@@ -48,6 +48,7 @@ def train():
     parser.add_argument('--vit-name', type=str, default='R50-ViT-B_16', help='select one vit model')
     parser.add_argument('--vit-patches-size', type=int, default=16, help='vit_patches_size, default is 16')
     parser.add_argument('--img-size', default=224, type=int, help='Input image size to model (independent of raw image size)')
+    parser.add_argument('--data-choice', type=str, default='pair', choices=['pair', 'single'], help='choose pair or single')
 
     # loss
     parser.add_argument('--loss', type=str, default='base', 
@@ -91,7 +92,7 @@ def train():
     torch.cuda.manual_seed(config.seed)
     
     # dataloader
-    trainloader = get_train_pair_loader(config)
+    trainloader = get_train_loader(config)
     config.max_iterations = config.epochs * len(trainloader) 
     ## initial for validation
     if config.dataset == 'ACDC':
@@ -148,7 +149,7 @@ def train():
     for epoch in range(epoch_start, config.epochs+1):
         iter_num = train_epoch(model, trainloader, optimizer, epoch, config, num_logger, iter_num)
         # save model
-        save_interval, valid_interval = 50, 10
+        save_interval, valid_interval = 150, 10
 
         if epoch % save_interval == 0 and config.dataset == 'Synapse':  # type: ignore
             save_model_path = os.path.join(config.results_dir, 'model_last.pth')  # type: ignore
@@ -204,7 +205,10 @@ def train_epoch(model, data_loader, optimizer, epoch, config, num_logger, iter_n
     description = ''
     for batch, (smp1, smp2) in enumerate(train_bar):
         x1, y1, idx1 = smp1['image'].cuda(), smp1['label'].cuda(), smp1['idx'].cuda()
-        x2, y2, idx2 = smp2['image'].cuda(), smp2['label'].cuda(), smp2['idx'].cuda()
+        if config.data_choice == 'single':
+            x2 = y2 = idx2 = None 
+        else:
+            x2, y2, idx2 = smp2['image'].cuda(), smp2['label'].cuda(), smp2['idx'].cuda()
 
         loss, loss_ce, loss_dice, reg_dac, weights, logits1, batch_num = model(x1, y1, idx1, x2, y2, idx2)
 

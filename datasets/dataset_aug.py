@@ -11,12 +11,14 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from scipy.ndimage.interpolation import zoom
 import h5py
 
 
-def get_train_pair_loader(config):
-    dataset = config.TrainingPair(config)
+def get_train_loader(config):
+    if config.data_choice == "single":
+        dataset = config.Dataset(config)
+    else:
+        dataset = config.TrainingPair(config)
     print("Train set length = {:d}".format(len(dataset)))
     dataloader = DataLoader(
         dataset,
