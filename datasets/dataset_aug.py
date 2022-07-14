@@ -84,6 +84,8 @@ class ACDC_training_pair(Synapse_training_pair):
         h5f = h5py.File(data_path, "r")
         image, label = h5f["image"][:], h5f["label"][:]  # type: ignore
         sample = {"image": image, "label": label}
+        if self.transform:
+            sample = self.transform(sample)
         sample["case_name"] = slice_name
         sample["idx"] = idx
         return sample
