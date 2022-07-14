@@ -1,0 +1,16 @@
+torch==1.4.0
+torchvision==0.5.0
+numpy
+tensorboard
+tensorboardX
+tqdm
+timm
+ml-collections
+medpy
+SimpleITK
+scipy
+h5py
+wandb
+scikit-image
+yacs
+einops

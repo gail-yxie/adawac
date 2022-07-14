@@ -22,10 +22,14 @@ class UNETS_AW_AC(nn.Module):
         self.dac_coef = [config.dac_encoder]
 
         PAIR_MODEL = {"transunet": TransUnetLatent, "unet": UNetLatent}
-        self.model = PAIR_MODEL[config._MODEL](config, config.img_size, config.num_classes).cuda()
-        
+        self.model = PAIR_MODEL[config._MODEL](
+            config, config.img_size, config.num_classes
+        ).cuda()
+
         self.weights = (torch.ones(config.num_samples, 2) / 2.0).cuda()
-        self.ratio = config.trim_ratio if config.trim_ratio >= 0 else 1 - 1280 / 2211 # default trim ratio for Synapse
+        self.ratio = (
+            config.trim_ratio if config.trim_ratio >= 0 else 1 - 1280 / 2211
+        )  # default trim ratio for Synapse
 
     def forward(self, x1, y1, idx1, x2, y2, idx2):
         """
@@ -51,6 +55,7 @@ class UNETS_AW_AC(nn.Module):
         loss_ce_ = loss_ce.clone().detach()
         dac_reg_ = dac_reg.clone().detach()  # if not dac, it's zeros
         batch_num = x1.shape[0]
+        mask = None
 
         if self.config.dac:
             # dac only
@@ -60,7 +65,7 @@ class UNETS_AW_AC(nn.Module):
                     * self.dac_coef[i]
                 )
             dac_reg_ = dac_reg.clone().detach()
-            mask = torch.ones(batch_num).cuda()
+            # mask = torch.ones(batch_num).cuda()
 
             # different losses with dac
             if self.config.loss == "adawac":
@@ -76,13 +81,23 @@ class UNETS_AW_AC(nn.Module):
                 mask = loss_ce_.gt(thre).to(torch.float32)
 
             # for general --> may need to change
-            # if self.config.loss in ["trim_sparse", "trim_ratio"]:
-            batch_num = sum(mask).item()  # type: ignore
-            loss = (
-                self.config.dice_ratio * loss_dice
-                + (1.0 - self.config.dice_ratio) * loss_ce * weights[:, 0] 
-                + dac_reg * weights[:, 1]
-            ) * mask
+            if self.config.loss in [
+                "trim_sparse",
+                "trim_ratio",
+            ]:  # without mask version
+                assert mask is not None
+                batch_num = sum(mask).item()  # type: ignore
+                loss = (
+                    self.config.dice_ratio * loss_dice
+                    + (1.0 - self.config.dice_ratio) * loss_ce * weights[:, 0]
+                    + dac_reg * weights[:, 1]
+                ) * mask
+            else:
+                loss = (
+                    self.config.dice_ratio * loss_dice
+                    + (1.0 - self.config.dice_ratio) * loss_ce * weights[:, 0]
+                    + dac_reg * weights[:, 1]
+                )
 
         elif self.config.loss == "reweight-only":
             loss_ce1_ = loss_ce1.clone().detach()
@@ -93,15 +108,23 @@ class UNETS_AW_AC(nn.Module):
                 self.config.dice_ratio * loss_dice1
                 + (1.0 - self.config.dice_ratio) * loss_ce1 * weights[:, 0]
             )
-        elif self.config.loss == 'base': 
-            loss = self.config.dice_ratio * loss_dice1 + (1.0 - self.config.dice_ratio) * loss_ce1
-        elif self.config.loss == 'pair':
-            loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * loss_ce
+        elif self.config.loss == "base":
+            loss = (
+                self.config.dice_ratio * loss_dice1
+                + (1.0 - self.config.dice_ratio) * loss_ce1
+            )
+        elif self.config.loss == "pair":
+            loss = (
+                self.config.dice_ratio * loss_dice
+                + (1.0 - self.config.dice_ratio) * loss_ce
+            )
         else:
             raise ValueError("Unknown loss type: {}".format(self.config.loss))
 
         if "trim" in self.config.loss:
-            loss = torch.sum(loss) / batch_num if batch_num != 0 else 0.0 * torch.sum(loss)
+            loss = (
+                torch.sum(loss) / batch_num if batch_num != 0 else 0.0 * torch.sum(loss)
+            )
         else:
             loss = torch.mean(loss)
         loss_dice_ = loss_dice.clone().detach()
@@ -122,12 +145,16 @@ class UNETS_BASE(nn.Module):
         self.ce_loss = nn.CrossEntropyLoss(reduction="none")
 
         PLAIN_MODEL = {"transunet": TransUNet, "unet": UNet}
-        self.model = PLAIN_MODEL[config._MODEL](config, config.img_size, config.num_classes)
-        
+        self.model = PLAIN_MODEL[config._MODEL](
+            config, config.img_size, config.num_classes
+        )
+
         # define losses
-        self.ratio = config.trim_ratio if config.trim_ratio >= 0 else 1 - 1280 / 2211 # default trim ratio for Synapse
-    
-    def forward(self, x, y, idx,  x2, y2, idx2):
+        self.ratio = (
+            config.trim_ratio if config.trim_ratio >= 0 else 1 - 1280 / 2211
+        )  # default trim ratio for Synapse
+
+    def forward(self, x, y, idx, x2, y2, idx2):
         # We can use this for simplicity, but here we use the original model to reproduce the results
         # logits = self.model(x, return_latent=False)
         logits = self.model(x)
@@ -138,10 +165,9 @@ class UNETS_BASE(nn.Module):
         loss_dice_ = loss_dice.clone().detach()
         batch_num = x.shape[0]
 
-
         # just for recording consistency
         logits_ = logits.clone().detach()
-        weights_ = (torch.zeros(self.config.num_samples, 2))
+        weights_ = torch.zeros(self.config.num_samples, 2)
         dac_reg_ = torch.zeros_like(loss_ce)
 
         if "trim" in self.config.loss:
@@ -157,16 +183,21 @@ class UNETS_BASE(nn.Module):
 
             assert mask is not None
             batch_num = sum(mask).item()  # type: ignore
-            loss = (self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * loss_ce) * mask
-            loss = torch.sum(loss) / batch_num if batch_num != 0 else 0.0 * torch.sum(loss)
+            loss = (
+                self.config.dice_ratio * loss_dice
+                + (1.0 - self.config.dice_ratio) * loss_ce
+            ) * mask
+            loss = (
+                torch.sum(loss) / batch_num if batch_num != 0 else 0.0 * torch.sum(loss)
+            )
         else:
-            loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * loss_ce
+            loss = (
+                self.config.dice_ratio * loss_dice
+                + (1.0 - self.config.dice_ratio) * loss_ce
+            )
             loss = torch.mean(loss)
 
         return loss, loss_ce_, loss_dice_, dac_reg_, weights_, logits_, batch_num
 
     def load_from(self, config):
         self.model.load_from(config)
-
-
-    
