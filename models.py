@@ -81,10 +81,7 @@ class UNETS_AW_AC(nn.Module):
                 mask = loss_ce_.gt(thre).to(torch.float32)
 
             # for general --> may need to change
-            if self.config.loss in [
-                "trim_sparse",
-                "trim_ratio",
-            ]:  # without mask version
+            if "trim" in self.config.loss:  # without mask version
                 assert mask is not None
                 batch_num = sum(mask).item()  # type: ignore
                 loss = (
