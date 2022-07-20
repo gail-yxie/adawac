@@ -92,8 +92,8 @@ class UNETS_AW_AC(nn.Module):
             else:
                 loss = (
                     self.config.dice_ratio * loss_dice
-                    + (1.0 - self.config.dice_ratio) * loss_ce * weights[:, 0]
-                    + dac_reg * weights[:, 1]
+                    + (1.0 - self.config.dice_ratio) * (loss_ce * weights[:, 0]
+                    + dac_reg * weights[:, 1])
                 )
 
         elif self.config.loss == "reweight-only":
