@@ -12,22 +12,47 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import h5py
+import torch
+
+
+# set random seed
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
 
 
 def get_train_loader(config):
     if config.data_choice == "single":
-        transform = transforms.Compose([RandomGenerator([config.img_size, config.img_size])])
+        transform = transforms.Compose(
+            [RandomGenerator([config.img_size, config.img_size])]
+        )
         dataset = config.Dataset(config.base_dir, config.list_dir, "train", transform)
     else:
         dataset = config.TrainingPair(config)
     print("Train set length = {:d}".format(len(dataset)))
+
+    #### previous dataloader
+    # dataloader = DataLoader(
+    #     dataset,
+    #     batch_size=config.batch_size,
+    #     shuffle=True,
+    #     num_workers=config.num_workers,
+    #     pin_memory=True,
+    #     worker_init_fn=lambda id: random.seed(config.seed + id),
+    # )
+
+    #### add new worker function with generator
+    g = torch.Generator()
+    g.manual_seed(config.seed)
     dataloader = DataLoader(
         dataset,
         batch_size=config.batch_size,
         shuffle=True,
         num_workers=config.num_workers,
         pin_memory=True,
-        worker_init_fn=lambda id: random.seed(config.seed + id),
+        worker_init_fn=seed_worker,
+        generator=g,
     )
 
     return dataloader
@@ -52,7 +77,9 @@ class Synapse_training_pair(Dataset):
         self.sample_list = open(
             os.path.join(self.list_dir, self.split + ".txt")
         ).readlines()
-        self.transform = transforms.Compose([RandomGenerator([config.img_size, config.img_size])])
+        self.transform = transforms.Compose(
+            [RandomGenerator([config.img_size, config.img_size])]
+        )
 
     def __len__(self):
         return len(self.sample_list)
