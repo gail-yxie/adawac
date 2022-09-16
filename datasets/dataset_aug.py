@@ -16,10 +16,10 @@ import torch
 
 
 # set random seed
-def seed_worker(worker_id):
-    worker_seed = torch.initial_seed() % 2**32
-    np.random.seed(worker_seed)
-    random.seed(worker_seed)
+# def seed_worker(worker_id):
+#     worker_seed = torch.initial_seed() % 2**32
+#     np.random.seed(worker_seed)
+#     random.seed(worker_seed)
 
 
 def get_train_loader(config):
@@ -33,26 +33,13 @@ def get_train_loader(config):
     print("Train set length = {:d}".format(len(dataset)))
 
     #### previous dataloader
-    # dataloader = DataLoader(
-    #     dataset,
-    #     batch_size=config.batch_size,
-    #     shuffle=True,
-    #     num_workers=config.num_workers,
-    #     pin_memory=True,
-    #     worker_init_fn=lambda id: random.seed(config.seed + id),
-    # )
-
-    #### add new worker function with generator
-    g = torch.Generator()
-    g.manual_seed(config.seed)
     dataloader = DataLoader(
         dataset,
         batch_size=config.batch_size,
         shuffle=True,
         num_workers=config.num_workers,
         pin_memory=True,
-        worker_init_fn=seed_worker,
-        generator=g,
+        worker_init_fn=lambda id: random.seed(config.seed + id),
     )
 
     return dataloader
