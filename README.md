@@ -1,9 +1,11 @@
-# Adaptively Weighted Augmentation Consistency (AdaWAC)
+# AdaWAC: Adaptively Weighted Augmentation Consistency Regularization for Volumetric Medical Image Segmentation
+
+This repository is the official implementation of _AdaWAC: Adaptively Weighted Augmentation Consistency Regularization for Volumetric Medical Image Segmentation_
 
 ## File Organization
-The main implementation in `adawac` is attached in the supplementary materials and will be published on GitHub.
+The main implementation in `adawac` is attached in the supplementary materials.
 
-To run AdaWAC, the relative paths for the datasets. pretrained models, and results are configured as follows.
+To run AdaWAC, the relative paths for the datasets. pretrained models and results are configured as follows.
 
 ```python
 ..
@@ -23,14 +25,12 @@ To run AdaWAC, the relative paths for the datasets. pretrained models, and resul
 |-results # experiment results
 ```
 
-## Environment Setup
+## Requirements
 ```
 pip install -r requirements.txt
 ```
 
-## Reproducing Experiments:
+## Reproducing Main Experiments:
 ```python
-bash runs/train_subset.sh # sample efficiency and robustness of AdaWAC
-bash runs/trim_loss.sh # comparisons with hard thresholding algorithms 
-bash runs/ablation.sh # ablation study
+bash reproduce.sh
 ```
