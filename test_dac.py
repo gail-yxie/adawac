@@ -60,7 +60,7 @@ def test():
     parser.add_argument('--results-dir', default='', type=str, metavar='PATH', help='path to cache (default: none)')
     parser.add_argument("--test_save_path", type=str, default='',help="test dir to save predictions")
 
-    arch_config = {'transunet': get_transunet_config, 'unet': get_unet_config}
+    arch_config = {'transunet': get_transunet_config}
     data_config = {'Synapse': get_synapse_config, 'ACDC': get_acdc_config}
     config = parser.parse_args()
     config = data_config[config.dataset](config)
