@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
-from configs import get_basic_config, get_transunet_config, get_unet_config, get_synapse_config, get_acdc_config
+from configs import get_basic_config, get_transunet_config, get_synapse_config, get_acdc_config
 from datasets.dataset_aug import get_train_loader, get_test_loader
 from datasets.dataset_acdc import BaseDataSets as ACDC_dataset
 from models import UNETS_AW_AC, UNETS_BASE

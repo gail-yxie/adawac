@@ -145,14 +145,3 @@ def get_transunet_config(config):
 
     config._MODEL = "transunet"
     return config
-
-
-def get_unet_config(config):
-    config.model = "unet"
-    config.n_classes = config.num_classes
-    config.n_channels = 3
-    config.bilinear = False
-    config._MODEL = "unet"
-    # config.decoder_channels = (512, 256, 128, 64)
-
-    return config

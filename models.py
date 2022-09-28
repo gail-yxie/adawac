@@ -8,9 +8,6 @@ from utils import DiceLossFull
 from networks.transunet_model import TransUnetLatent
 from networks.vit_seg_modeling import VisionTransformer as TransUNet
 
-# UNet
-from networks.unet_model import UNetLatent, UNet
-
 
 class UNETS_AW_AC(nn.Module):
     def __init__(self, config):
@@ -21,7 +18,7 @@ class UNETS_AW_AC(nn.Module):
         self.dac_loss = nn.MSELoss(reduction="none")
         self.dac_coef = [config.dac_encoder]
 
-        PAIR_MODEL = {"transunet": TransUnetLatent, "unet": UNetLatent}
+        PAIR_MODEL = {"transunet": TransUnetLatent}
         self.model = PAIR_MODEL[config._MODEL](
             config, config.img_size, config.num_classes
         )
@@ -141,7 +138,7 @@ class UNETS_BASE(nn.Module):
         self.dice_loss = DiceLossFull(config)
         self.ce_loss = nn.CrossEntropyLoss(reduction="none")
 
-        PLAIN_MODEL = {"transunet": TransUNet, "unet": UNet}
+        PLAIN_MODEL = {"transunet": TransUNet}
         self.model = PLAIN_MODEL[config._MODEL](
             config, config.img_size, config.num_classes
         )

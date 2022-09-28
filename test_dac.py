@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
-from configs import get_basic_config, get_transunet_config, get_unet_config, get_synapse_config, get_acdc_config
+from configs import get_basic_config, get_transunet_config, get_synapse_config, get_acdc_config
 from models import UNETS_AW_AC, UNETS_BASE
 from train_dac import inference
 import os
