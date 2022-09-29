@@ -7,7 +7,7 @@
 MODEL=transunet
 DICE_RATIO=0.5
 LOSS=adawac
-DAC_EN=1.0
+DAC_EN=2.0
 LR_W=1.0
 LR=0.01
 
