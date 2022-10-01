@@ -11,10 +11,14 @@ To run AdaWAC, the relative paths for the datasets, the pre-trained models, and 
 |-- data # Synapse and ACDC datasets
 |   |-- ACDC
 |   |   |-- ACDC_training_slices
+|           |-- patient*_frame*_slice_*.h5
 |   |   |-- ACDC_training_volumes
+|           |-- patient*_frame*.h5
 |   |-- Synapse
 |       |-- test_vol_h5
+|           |-- case*.npy.h5
 |       |-- train_npz
+|           |-- case*_slice*.npz
 |-- model # pretrained models
 |   |-- vit_checkpoint
 |       |-- imagenet21k
