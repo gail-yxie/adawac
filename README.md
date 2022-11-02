@@ -44,4 +44,3 @@ bash reproduce.sh
 
 ## Reference
 * [TransUNet](https://github.com/Beckschen/TransUNet)
-* [Swin-Unet](https://github.com/HuCaoFighting/Swin-Unet)
