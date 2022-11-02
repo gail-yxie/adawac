@@ -52,7 +52,7 @@ def train():
 
     # loss
     parser.add_argument('--loss', type=str, default='base', 
-                        choices=['ce', 'base', 'pair', 'adawac', 'trim-ratio', 'trim-train', 'reweight-only', 'dac-only'], help='loss function')
+                        choices=['ce', 'base', 'pair', 'adawac', 'trim-ratio', 'trim-train', 'reweight-only', 'dac-only', 'pseudo'], help='loss function')
     parser.add_argument('--trim-ratio', type=float, default=0.0, help='trim ratio for trim-ratio loss')
     parser.add_argument('--dice-ratio', type=float, default=0.5, help='ratio for dice loss')
     

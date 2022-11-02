@@ -13,7 +13,7 @@ def get_basic_config(argin):
     info = f"{config.dataset:s}_{config.model:s}_{config.img_size:d}"
     dac_info = f"_en{str(config.dac_encoder):s}"
     loss_info = (
-        f"_{config.loss:s}_trim-ratio{config.trim_ratio:.1f}_dice-ratio{config.dice_ratio:.1f}"
+        f"_{config.loss:s}_trim-ratio{config.trim_ratio:.1f}_dice-ratio{config.dice_ratio:.1f}_lr-w{config.lr_w:.0e}"
     )
     vit_info = (
         f"_skip{config.n_skip:d}_vitpatch{config.patch_size:d}_{config.vit_name:s}"

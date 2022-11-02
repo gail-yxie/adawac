@@ -70,23 +70,24 @@ class UNETS_AW_AC(nn.Module):
                 weights[:, 1] *= torch.exp(self.config.lr_w * dac_reg_)
                 weights = F.normalize(weights, p=1, dim=1)
                 self.weights[idx1] = weights
-            elif self.config.loss == "trim-train":
+            elif self.config.loss in ["trim-train",'pseudo']:
                 label_sum = torch.sum(y1, dim=[1, 2]).clone().detach()
                 mask = label_sum.gt(0).to(torch.float32)
             elif self.config.loss == "trim-ratio":
                 thre = torch.quantile(loss_ce_, self.ratio)
                 mask = loss_ce_.gt(thre).to(torch.float32)
 
-            # for general --> may need to change
-            if "trim" in self.config.loss:  # without mask version
+            if self.config.loss=='pseudo':
+                assert mask is not None
+                loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * (loss_ce * mask + dac_reg * (1.0-mask))
+            elif "trim" in self.config.loss:  # without mask version
                 assert mask is not None
                 batch_num = sum(mask).item()  # type: ignore
                 loss = (
                     self.config.dice_ratio * loss_dice
-                    + (1.0 - self.config.dice_ratio) * loss_ce * weights[:, 0]
-                    + dac_reg * weights[:, 1]
+                    + (1.0 - self.config.dice_ratio) * (loss_ce + dac_reg) / 2.0
                 ) * mask
-            else:
+            else: # adawac
                 loss = (
                     self.config.dice_ratio * loss_dice
                     + (1.0 - self.config.dice_ratio) * (loss_ce * weights[:, 0]
