@@ -11,6 +11,8 @@ LR=0.01
 # baseline
 CUDA_VISIBLE_DEVICES=0 python train_dac.py --dataset $DATASET --epochs $EPOCHS --lr $LR --model $MODEL --dice-ratio $DICE_RATIO
 
+CUDA_VISIBLE_DEVICES=0 python train_dac.py --dataset $DATASET --epochs $EPOCHS --lr $LR --model $MODEL --dice-ratio $DICE_RATIO --decay-lr poly
+
 # AdaWAC
 CUDA_VISIBLE_DEVICES=0 python train_dac.py --dataset $DATASET --epochs $EPOCHS --lr $LR --model $MODEL --dice-ratio $DICE_RATIO --dac --loss adawac --dac-encoder $DAC_EN --lr-w $LR_W --exp-mark adawac_$LR_W
 
