@@ -7,13 +7,7 @@ class DecoderCupLatent(DecoderCup):
         super().__init__(config)
 
     def forward(self, hidden_states, features=None):
-        (
-            B,
-            n_patch,
-            hidden,
-        ) = (
-            hidden_states.size()
-        )  # reshape from (B, n_patch, hidden) to (B, h, w, hidden)
+        B, n_patch, hidden = hidden_states.size() # reshape from (B, n_patch, hidden) to (B, h, w, hidden)
         h, w = int(np.sqrt(n_patch)), int(np.sqrt(n_patch))
         x = hidden_states.permute(0, 2, 1)
         x = x.contiguous().view(B, hidden, h, w)

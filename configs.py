@@ -18,7 +18,7 @@ def get_basic_config(argin):
     vit_info = (
         f"_skip{config.n_skip:d}_vitpatch{config.patch_size:d}_{config.vit_name:s}"
         if config.model == "transunet"
-        else "_skip_None"
+        else ""
     )
     train_info = f"_epo{config.epochs:d}_bs{config.batch_size:d}_lr{config.lr:.0e}_lrs-{config.decay_lr:s}_mm{config.momentum:.2f}"
     timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%m-%d-%Y-%H-%M")
@@ -144,4 +144,10 @@ def get_transunet_config(config):
         )
 
     config._MODEL = "transunet"
+    return config
+
+
+def get_unet_config(config):
+    config.model = "unet"
+    config._MODEL = "unet"
     return config

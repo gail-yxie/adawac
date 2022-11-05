@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
-from configs import get_basic_config, get_transunet_config, get_synapse_config, get_acdc_config
+from configs import get_basic_config, get_transunet_config, get_unet_config, get_synapse_config, get_acdc_config
 from datasets.dataset_aug import get_train_loader, get_test_loader
 from datasets.dataset_acdc import BaseDataSets as ACDC_dataset
 from models import UNETS_AW_AC, UNETS_BASE
@@ -42,7 +42,7 @@ def train():
     parser.add_argument('--wd', default=1e-4, type=float, metavar='W', help='weight decay')
     
     # model architecture
-    parser.add_argument('--model', type=str, default='transunet', help='model network')
+    parser.add_argument('--model', type=str, default='transunet', help='transunet / unet')
     parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint (default: none)')
     parser.add_argument('--n-skip', type=int, default=3, help='using number of skip-connect, default is num')
     parser.add_argument('--vit-name', type=str, default='R50-ViT-B_16', help='select one vit model')
@@ -69,7 +69,7 @@ def train():
     parser.add_argument("--test_save_path", type=str, default='',help="test dir to save predictions")
 
 
-    arch_config = {'transunet': get_transunet_config}
+    arch_config = {'transunet': get_transunet_config, 'unet': get_unet_config}
     data_config = {'Synapse': get_synapse_config, 'ACDC': get_acdc_config}
     config = parser.parse_args()
     config = data_config[config.dataset](config)
@@ -137,7 +137,9 @@ def train():
                     "dac":  torch.zeros(config.num_samples, config.epochs).cuda(),
                     "w_dac":torch.zeros(config.num_samples, config.epochs).cuda(),
                 }
-    wandb.init(project=f"transunet_{config.dataset}_simple", entity="medical-image", tags=[config.partial, config.model])
+    wandb.init(project=f"AdaWAC", entity="medical-image", 
+               tags=[config.dataset, config.partial, config.model])
+    wandb.run.name = config.exp_name
     wandb.config.update(config)
     iter_num = 0
     # record

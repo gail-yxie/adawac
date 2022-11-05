@@ -1,9 +1,22 @@
+# Code adapted from: https://github.com/milesial/Pytorch-UNet
 """ Parts of the U-Net model """
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Linear') != -1:
+        nn.init.xavier_uniform_(m.weight)
+        nn.init.zeros_(m.bias)
+    elif classname.find('Conv') != -1:
+        nn.init.normal_(m.weight, 0.0, 0.02)
+    elif classname.find('BatchNorm') != -1:
+        nn.init.normal_(m.weight, 1.0, 0.02)
+        nn.init.zeros_(m.bias)
+        
 
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
