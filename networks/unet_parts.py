@@ -4,18 +4,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-
-def weights_init(m):
-    classname = m.__class__.__name__
-    if classname.find('Linear') != -1:
-        nn.init.xavier_uniform_(m.weight)
-        nn.init.zeros_(m.bias)
-    elif classname.find('Conv') != -1:
-        nn.init.normal_(m.weight, 0.0, 0.02)
-    elif classname.find('BatchNorm') != -1:
-        nn.init.normal_(m.weight, 1.0, 0.02)
-        nn.init.zeros_(m.bias)
         
 
 class DoubleConv(nn.Module):
@@ -85,6 +73,26 @@ class OutConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(OutConv, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        adawac_weights_init(self.conv)
 
     def forward(self, x):
         return self.conv(x)
+
+
+def adawac_weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        nn.init.kaiming_uniform_(m.weight[0], a=0)
+        nn.init.kaiming_uniform_(m.weight[1:], a=1e9)
+
+# template, not using
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Linear') != -1:
+        nn.init.xavier_uniform_(m.weight)
+        nn.init.zeros_(m.bias)
+    elif classname.find('Conv') != -1:
+        nn.init.kaiming_uniform_(m.weight, a=1e5)
+    elif classname.find('BatchNorm') != -1:
+        nn.init.ones_(m.weight)
+        nn.init.zeros_(m.bias)

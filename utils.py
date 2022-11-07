@@ -4,7 +4,7 @@ from medpy import metric
 from scipy.ndimage import zoom
 import SimpleITK as sitk
 import torch.nn as nn
-
+import wandb
 
 def calculate_metric_percase(pred, gt):
     pred[pred > 0] = 1
@@ -40,9 +40,10 @@ def test_single_volume(
     classes,
     patch_size=[256, 256],
     test_save_path=None,
-    case=None,
+    case='',
     z_spacing=1,
     metric_choice="modified",
+    wandb_save=False,
 ):
     image, label = (
         image.squeeze(0).cpu().detach().numpy(),
@@ -74,6 +75,7 @@ def test_single_volume(
         with torch.no_grad():
             out = torch.argmax(torch.softmax(net(input), dim=1), dim=1).squeeze(0)
             prediction = out.cpu().detach().numpy()
+    
     metric_list = []
     for i in range(1, classes):
         if metric_choice == "modified":
@@ -84,6 +86,31 @@ def test_single_volume(
             )
         else:
             raise ValueError("Not valid test metric.")
+
+    if wandb_save:
+        class_labels = {
+            0:'background', 
+            1:'aorta', 
+            2:'gallbladder', 
+            3:'left kidney', 
+            4:'right kidney', 
+            5:'liver', 
+            6:'pancreas', 
+            7:'spleen', 
+            8:'stomach',
+        }
+        for i in range(0, prediction.shape[0], prediction.shape[0]//30):
+            mask_img = wandb.Image(image[i], masks={
+                "predictions": {
+                    "mask_data": prediction[i].astype(int),
+                    "class_labels": class_labels
+                },
+                "labels": {
+                    "mask_data": label[i],
+                    "class_labels": class_labels
+                }
+            })
+            wandb.log({f'test_{case}': mask_img})
 
     if test_save_path:
         img_itk = sitk.GetImageFromArray(image.astype(np.float32))

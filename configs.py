@@ -10,7 +10,7 @@ from datasets.dataset_aug import Synapse_training_pair, ACDC_training_pair
 
 def get_basic_config(argin):
     config = ml_collections.ConfigDict(vars(argin))
-    info = f"{config.dataset:s}_{config.model:s}_{config.img_size:d}"
+    info = f"{config.dataset:s}_{config.model:s}_{config.img_size:d}_{config.seed:d}"
     dac_info = f"_en{str(config.dac_encoder):s}"
     loss_info = (
         f"_{config.loss:s}_trim-ratio{config.trim_ratio:.1f}_dice-ratio{config.dice_ratio:.1f}_lr-w{config.lr_w:.0e}"

@@ -138,7 +138,9 @@ def train():
                     "w_dac":torch.zeros(config.num_samples, config.epochs).cuda(),
                 }
     wandb.init(project=f"AdaWAC", entity="medical-image", 
-               tags=[config.dataset, config.partial, config.model])
+               tags=[
+                   config.dataset, config.partial, config.model, 'init-ku-ab0-ao1e9'
+               ])
     wandb.run.name = config.exp_name
     wandb.config.update(config)
     iter_num = 0
@@ -152,7 +154,7 @@ def train():
         # save model
         save_interval, valid_interval = 150, 10
 
-        if epoch % save_interval == 0 and config.dataset == 'Synapse':  # type: ignore
+        if epoch % save_interval == 0 and epoch < config.epochs and config.dataset == 'Synapse':  # type: ignore
             save_model_path = os.path.join(config.results_dir, 'model_last.pth')  # type: ignore
             logging.info("save model to {}".format(save_model_path))
             torch.save({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer' : optimizer.state_dict(),}, save_model_path)
@@ -163,31 +165,36 @@ def train():
                 best_modified, best_epoch = [modified_dice, modified_hd], epoch
             if previous_dice > best_previous[0]:
                 best_previous = [previous_dice, previous_hd]
-        elif  epoch % valid_interval == 0 and config.dataset == "ACDC":
+        elif  epoch % valid_interval == 0 and epoch < config.epochs and config.dataset == "ACDC":
             assert valloader is not None
             assert db_val is not None
             best_performance, best_epoch = valid_epoch(model.model, config, valloader, db_val, best_performance, epoch, best_epoch)
     
     # test
-    if config.dataset == "ACDC" and epoch > valid_interval:  # type: ignore
+    if config.dataset == "ACDC":  # type: ignore
         save_best = os.path.join(config.results_dir, "best_model.pth")
         model.model.load_state_dict(torch.load(save_best))  # type: ignore
         logging.info("Loaded best model via validation.")
-        best_modified = inference(model.model, config, metric_choice="modified")
+        best_modified = inference(model.model, config, metric_choice="modified", wandb_save=True)
         best_previous = inference(model.model, config, metric_choice="previous")
 
-    wandb.log({ "best modified test mean dice": best_modified[0],
-                "best modified test mean hd95": best_modified[1],
-                "best previous test mean dice": best_previous[0],
-                "best previous test mean hd95": best_previous[1],
-                "best epoch": best_epoch,
-            })
-
     if config.dataset == "Synapse":
-        assert modified_dice is not None
-        assert modified_hd is not None
-        assert previous_dice is not None
-        assert previous_hd is not None
+        save_model_path = os.path.join(config.results_dir, 'model_last.pth')  # type: ignore
+        logging.info("save model to {}".format(save_model_path))
+        torch.save({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer' : optimizer.state_dict(),}, save_model_path)
+        # test
+        modified_dice, modified_hd = inference(model.model, config, metric_choice="modified", wandb_save=True)
+        previous_dice, previous_hd = inference(model.model, config, metric_choice="previous")
+        if modified_dice > best_modified[0]:
+            best_modified, best_epoch = [modified_dice, modified_hd], epoch
+        if previous_dice > best_previous[0]:
+            best_previous = [previous_dice, previous_hd]
+        
+        wandb.log({ "best modified test mean dice": best_modified[0],
+                    "best modified test mean hd95": best_modified[1],
+                    "best previous test mean dice": best_previous[0],
+                    "best previous test mean hd95": best_previous[1],
+                    "best epoch": best_epoch,})
         
         wandb.log({ "last modified test mean dice": modified_dice,
                     "last modified test mean hd95": modified_hd,
@@ -240,13 +247,30 @@ def train_epoch(model, data_loader, optimizer, epoch, config, num_logger, iter_n
         num_logger['dac'][idx1,epoch-1] = reg_dac
         num_logger['w_dac'][idx1,epoch-1] = weights[:,1]
 
-        wandb.log({ "total_loss": loss.item(),
-                    "loss_ce": torch.mean(loss_ce).item(),
-                    "loss_dice": torch.mean(loss_dice).item(),
-                    "reg_dac": torch.mean(reg_dac).item(),
+        wandb.log({ 
+                    # "batch_loss": loss.item(),
+                    # "batch_ce": torch.mean(loss_ce).item(),
+                    # "batch_dice": torch.mean(loss_dice).item(),
+                    # "batch_acr": torch.mean(reg_dac).item(),
                     "lr": lr_,
                     "batch_num": batch_num
                 })
+    
+    wandb.log({
+        "epoch_loss": total_loss/total_num, 
+        "epoch_ce": total_loss_ce/total_num, 
+        "epoch_dice": total_loss_dice/total_num, 
+        "epoch_acr": total_reg_dac/total_num,
+    })
+    log_sample_metrics = ['ce','dac','w_dac']
+    sample = torch.arange(config.num_samples).cuda()
+    for metric in log_sample_metrics:
+        table = wandb.Table(
+            data=[[x, y] for (x, y) in zip(sample, num_logger[metric][:,epoch-1])], 
+            columns = ["sample", metric]
+        )
+        wandb.log({'samplewise_'+metric: wandb.plot.scatter(table, "sample", metric)})
+    
     
     logging.info(description)
     return iter_num
@@ -323,7 +347,7 @@ def valid_epoch(model, config, valloader, db_val, best_performance, epoch, best_
 
 # test
 @torch.no_grad()
-def inference(model, config, metric_choice="modified"):
+def inference(model, config, metric_choice="modified", wandb_save=False):
     # dataloader
     testloader, db_test = get_test_loader(config)
 
@@ -338,7 +362,7 @@ def inference(model, config, metric_choice="modified"):
     for i_batch, (sampled_batch, _) in tqdm(enumerate(testloader)):
         h, w = sampled_batch["image"].size()[2:]
         image, label, case_name = sampled_batch["image"], sampled_batch["label"], sampled_batch['case_name'][0]
-        metric_i = test_single_volume( image,
+        metric_i = test_single_volume(  image,
                                         label,
                                         model,
                                         classes=config.num_classes,
@@ -347,6 +371,7 @@ def inference(model, config, metric_choice="modified"):
                                         case=case_name,
                                         z_spacing=config.z_spacing,
                                         metric_choice=metric_choice,
+                                        wandb_save=wandb_save,
         )
         metric_list += np.array(metric_i)
         logging.info('idx %d case %s mean_dice %f mean_hd95 %f' % (
@@ -361,9 +386,11 @@ def inference(model, config, metric_choice="modified"):
     performance = np.mean(metric_list, axis=0)[0]
     mean_hd95 = np.mean(metric_list, axis=0)[1]
     logging.info('Testing performance in best val model with %s: mean_dice : %f mean_hd95 : %f \n' % (metric_choice, performance, mean_hd95))
+    
     wandb.log({ f"{metric_choice} test mean dice": performance,
                 f"{metric_choice} test mean hd95": mean_hd95,
             })
+    
     return performance, mean_hd95
 
 
