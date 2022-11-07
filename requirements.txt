@@ -14,3 +14,4 @@ wandb
 scikit-image
 yacs
 einops
+segmentation_models_pytorch

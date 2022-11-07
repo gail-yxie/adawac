@@ -137,12 +137,14 @@ def train():
                     "dac":  torch.zeros(config.num_samples, config.epochs).cuda(),
                     "w_dac":torch.zeros(config.num_samples, config.epochs).cuda(),
                 }
+    
     wandb.init(project=f"AdaWAC", entity="medical-image", 
                tags=[
-                   config.dataset, config.partial, config.model, 'init-ku-ab0-ao1e9'
+                   config.dataset, config.partial, config.model, config.loss, config.encoder_init_tag,
                ])
     wandb.run.name = config.exp_name
     wandb.config.update(config)
+    
     iter_num = 0
     # record
     best_modified, best_previous, best_performance, best_epoch = [0, 0], [0, 0], 0.0, epoch_start

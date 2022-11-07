@@ -121,6 +121,7 @@ def get_b16_config(config):
 
 def get_transunet_config(config):
     config.model = "transunet"
+    config._MODEL = "transunet"
     config = get_b16_config(config)
     config.n_classes = config.num_classes
 
@@ -142,12 +143,19 @@ def get_transunet_config(config):
             int(config.img_size / config.patch_size),
             int(config.img_size / config.patch_size),
         )
-
-    config._MODEL = "transunet"
+        
+    config.encoder_init_tag = 'init-R50+ViT-B_16'
     return config
 
 
 def get_unet_config(config):
     config.model = "unet"
     config._MODEL = "unet"
+    config.encoder_name = "resnet34"
+    config.encoder_depth = 5
+    config.encoder_weights = "imagenet"
+    config.decoder_use_batchnorm = True
+    config.decoder_channels = (256, 128, 64, 32, 16)
+    config.in_channels = 1
+    config.encoder_init_tag = 'init-' + config.encoder_name
     return config

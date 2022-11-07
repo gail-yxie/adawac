@@ -8,7 +8,7 @@ from utils import DiceLossFull
 from networks.transunet_model import TransUnetLatent
 from networks.vit_seg_modeling import VisionTransformer as TransUNet
 
-from networks.unet_model import UnetLatent, UNet
+from networks.unet_model import UNetLatent, UNet
 
 
 class UNETS_AW_AC(nn.Module):
@@ -22,7 +22,7 @@ class UNETS_AW_AC(nn.Module):
 
         PAIR_MODEL = {
             "transunet": TransUnetLatent,
-            'unet': UnetLatent,
+            'unet': UNetLatent,
         }
         self.model = PAIR_MODEL[config._MODEL](
             config, config.img_size, config.num_classes
