@@ -10,19 +10,19 @@ from datasets.dataset_aug import Synapse_training_pair, ACDC_training_pair
 
 def get_basic_config(argin):
     config = ml_collections.ConfigDict(vars(argin))
-    info = f"{config.dataset:s}_{config.model:s}_{config.img_size:d}_{config.seed:d}"
-    dac_info = f"_en{str(config.dac_encoder):s}"
+    info = f"{config.dataset:s}_{config.model:s}_{config.img_size:d}_{config.seed:d}_{config.partial:s}"
+    dac_info = f"en{str(config.dac_encoder):s}"
     loss_info = (
-        f"_{config.loss:s}_trim-ratio{config.trim_ratio:.1f}_dice-ratio{config.dice_ratio:.1f}_lr-w{config.lr_w:.0e}"
+        f"{config.loss:s}_lr-w{config.lr_w:.0e}_trim-ratio{config.trim_ratio:.1f}_dice-ratio{config.dice_ratio:.1f}"
     )
     vit_info = (
-        f"_skip{config.n_skip:d}_vitpatch{config.patch_size:d}_{config.vit_name:s}"
+        f"skip{config.n_skip:d}_vitpatch{config.patch_size:d}_{config.vit_name:s}"
         if config.model == "transunet"
         else ""
     )
-    train_info = f"_epo{config.epochs:d}_bs{config.batch_size:d}_lr{config.lr:.0e}_lrs-{config.decay_lr:s}_mm{config.momentum:.2f}"
+    train_info = f"epo{config.epochs:d}_bs{config.batch_size:d}_lr{config.lr:.0e}_lrs-{config.decay_lr:s}_mm{config.momentum:.2f}"
     timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%m-%d-%Y-%H-%M")
-    config.exp_name = f"{info:s}_{dac_info:s}_{loss_info:s}_{vit_info:s}_{train_info:s}__{timestamp}"
+    config.exp_name = f"{info:s}__{dac_info:s}__{loss_info:s}__{vit_info:s}__{train_info:s}__{timestamp}"
 
     config.results_dir = (
         os.path.join("../results/", config.exp_name)
@@ -31,9 +31,12 @@ def get_basic_config(argin):
     )
     config.resume = ""
     config.use_checkpoint = False
+    if config.test_save_path != '':
+        config.test_save_path = os.path.join(config.test_save_path, config.exp_name)
     return config
 
 
+# dataset config
 def get_synapse_config(config):
     list_root = "./lists/lists_Synapse"
     partial_dict = {
@@ -97,6 +100,7 @@ def get_acdc_config(config):
     return config
 
 
+# arch config
 def get_b16_config(config):
     """Returns the ViT-B/16 configuration."""
     config.patches = ml_collections.ConfigDict({'size': (16, 16)})

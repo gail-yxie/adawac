@@ -53,7 +53,7 @@ def train():
     # loss
     parser.add_argument('--loss', type=str, default='base', 
                         choices=['ce', 'base', 'pair', 'adawac', 'trim-ratio', 'trim-train', 'reweight-only', 'dac-only', 'pseudo'], help='loss function')
-    parser.add_argument('--trim-ratio', type=float, default=0.0, help='trim ratio for trim-ratio loss')
+    parser.add_argument('--trim-ratio', type=float, default=0.4210764360018091, help='trim ratio for trim-ratio loss, default for Synapse')
     parser.add_argument('--dice-ratio', type=float, default=0.5, help='ratio for dice loss')
     
     # adaptive weighted agumentation consistency
@@ -357,7 +357,7 @@ def inference(model, config, metric_choice="modified", wandb_save=False):
     logging.info("\n{} test iterations per epoch".format(len(testloader)))
     if config.test_save_path != '' and not os.path.exists(config.test_save_path):
         os.makedirs(config.test_save_path)
-
+        
     # testing
     model.eval()
     metric_list = 0.0

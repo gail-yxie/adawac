@@ -32,6 +32,11 @@ class UNETS_AW_AC(nn.Module):
         self.ratio = (
             config.trim_ratio if config.trim_ratio >= 0 else 1 - 1280 / 2211
         )  # default trim ratio for Synapse
+        
+    def update_weights(self, weights, loss_ces, dac_regs):
+        weights[:, 0] *= torch.exp(self.config.lr_w * (loss_ces-dac_regs))
+        weights = F.normalize(weights, p=1, dim=1)
+        return weights
 
     def forward(self, x1, y1, idx1, x2, y2, idx2):
         """
@@ -71,9 +76,7 @@ class UNETS_AW_AC(nn.Module):
 
             # different losses with dac
             if self.config.loss == "adawac":
-                weights[:, 0] *= torch.exp(self.config.lr_w * loss_ce_)
-                weights[:, 1] *= torch.exp(self.config.lr_w * dac_reg_)
-                weights = F.normalize(weights, p=1, dim=1)
+                weights = self.update_weights(weights, loss_ce_, dac_reg_)
                 self.weights[idx1] = weights
             elif self.config.loss in ["trim-train",'pseudo']:
                 label_sum = torch.sum(y1, dim=[1, 2]).clone().detach()
@@ -92,7 +95,7 @@ class UNETS_AW_AC(nn.Module):
                     self.config.dice_ratio * loss_dice
                     + (1.0 - self.config.dice_ratio) * (loss_ce + dac_reg) / 2.0
                 ) * mask
-            else: # adawac
+            else: # adawac/dac-only
                 loss = (
                     self.config.dice_ratio * loss_dice
                     + (1.0 - self.config.dice_ratio) * (loss_ce * weights[:, 0]
@@ -101,8 +104,7 @@ class UNETS_AW_AC(nn.Module):
 
         elif self.config.loss == "reweight-only":
             loss_ce1_ = loss_ce1.clone().detach()
-            weights[:, 0] *= torch.exp(self.config.lr_w * loss_ce1_)
-            weights = F.normalize(weights, p=1, dim=1)
+            weights = self.update_weights(weights, loss_ce1_, 0.0)
             self.weights[idx1, 0] = weights[:, 0]
             loss = (
                 self.config.dice_ratio * loss_dice1
@@ -154,7 +156,7 @@ class UNETS_BASE(nn.Module):
 
         # define losses
         self.ratio = (
-            config.trim_ratio if config.trim_ratio >= 0 else 1 - 1280 / 2211
+            config.trim_ratio if config.trim_ratio >= 0 else (1 - 1280 / 2211)
         )  # default trim ratio for Synapse
 
     def forward(self, x, y, idx, x2, y2, idx2):
