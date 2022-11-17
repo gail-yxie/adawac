@@ -132,3 +132,4 @@ dmypy.json
 /wandb/
 /exp/
 __*.ipynb
+run_test.sh

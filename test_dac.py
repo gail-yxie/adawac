@@ -56,7 +56,7 @@ def test():
     parser.add_argument('--lr-w', default=1.0, type=float, help='learning rate for weights')
     
     # experiment and results
-    parser.add_argument('--exp-mark', type=str, default='', help='exp-mark')
+    parser.add_argument('--exp-mark', type=str, default='', help='deprecated')
     parser.add_argument('--results-dir', default='', type=str, metavar='PATH', help='path to cache (default: none)')
     parser.add_argument("--test_save_path", type=str, default='',help="test dir to save predictions")
 
@@ -66,7 +66,6 @@ def test():
     config = data_config[config.dataset](config)
     config = arch_config[config.model](config)
     config = get_basic_config(config)
-    config.test_save_path = os.path.join('../test_results', config.dataset + config.exp_mark)
 
     config: Any
 

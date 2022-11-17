@@ -35,13 +35,14 @@ class RandomGenerator(object):
 
         if random.random() > 0.5:
             image, label = random_rot_flip(image, label)
-        elif random.random() > 0.5:
+        # elif random.random() > 0.5:
+        else:
             image, label = random_rotate(image, label)
         x, y = image.shape
         if x != self.output_size[0] or y != self.output_size[1]:
             image = zoom(
                 image, (self.output_size[0] / x, self.output_size[1] / y), order=3
-            )  # why not 3?
+            ) 
             label = zoom(
                 label, (self.output_size[0] / x, self.output_size[1] / y), order=0
             )

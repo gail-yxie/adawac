@@ -64,7 +64,7 @@ def train():
     parser.add_argument('--lr-w', default=1.0, type=float, help='learning rate for weights')
     
     # experiment and results
-    parser.add_argument('--exp-mark', type=str, default='', help='exp-mark')
+    parser.add_argument('--exp-mark', type=str, default='', help='deprecated')
     parser.add_argument('--results-dir', default='', type=str, metavar='PATH', help='path to cache (default: none)')
     parser.add_argument("--test_save_path", type=str, default='',help="test dir to save predictions")
 
@@ -162,11 +162,11 @@ def train():
             torch.save({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer' : optimizer.state_dict(),}, save_model_path)
             # test
             modified_dice, modified_hd = inference(model.model, config, metric_choice="modified")
-            previous_dice, previous_hd = inference(model.model, config, metric_choice="previous")
+            # previous_dice, previous_hd = inference(model.model, config, metric_choice="previous")
             if modified_dice > best_modified[0]:
                 best_modified, best_epoch = [modified_dice, modified_hd], epoch
-            if previous_dice > best_previous[0]:
-                best_previous = [previous_dice, previous_hd]
+            # if previous_dice > best_previous[0]:
+            #     best_previous = [previous_dice, previous_hd]
         elif  epoch % valid_interval == 0 and epoch < config.epochs and config.dataset == "ACDC":
             assert valloader is not None
             assert db_val is not None
@@ -178,7 +178,7 @@ def train():
         model.model.load_state_dict(torch.load(save_best))  # type: ignore
         logging.info("Loaded best model via validation.")
         best_modified = inference(model.model, config, metric_choice="modified", wandb_save=True)
-        best_previous = inference(model.model, config, metric_choice="previous")
+        # best_previous = inference(model.model, config, metric_choice="previous")
 
     if config.dataset == "Synapse":
         save_model_path = os.path.join(config.results_dir, 'model_last.pth')  # type: ignore
@@ -186,22 +186,23 @@ def train():
         torch.save({'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer' : optimizer.state_dict(),}, save_model_path)
         # test
         modified_dice, modified_hd = inference(model.model, config, metric_choice="modified", wandb_save=True)
-        previous_dice, previous_hd = inference(model.model, config, metric_choice="previous")
+        # previous_dice, previous_hd = inference(model.model, config, metric_choice="previous")
         if modified_dice > best_modified[0]:
             best_modified, best_epoch = [modified_dice, modified_hd], epoch
-        if previous_dice > best_previous[0]:
-            best_previous = [previous_dice, previous_hd]
+        # if previous_dice > best_previous[0]:
+        #     best_previous = [previous_dice, previous_hd]
         
         wandb.log({ "best modified test mean dice": best_modified[0],
                     "best modified test mean hd95": best_modified[1],
-                    "best previous test mean dice": best_previous[0],
-                    "best previous test mean hd95": best_previous[1],
+                    # "best previous test mean dice": best_previous[0],
+                    # "best previous test mean hd95": best_previous[1],
                     "best epoch": best_epoch,})
         
         wandb.log({ "last modified test mean dice": modified_dice,
                     "last modified test mean hd95": modified_hd,
-                    "last previous test mean dice": previous_dice,
-                    "last previous test mean hd95": previous_hd,})
+                    # "last previous test mean dice": previous_dice,
+                    # "last previous test mean hd95": previous_hd,
+                })
 
     torch.save(num_logger, os.path.join(config.results_dir, 'num_logger.pt'))  # type: ignore
     wandb.finish()
