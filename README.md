@@ -1,5 +1,5 @@
-# AdaWAC: Adaptively Weighted Augmentation Consistency Regularization for Volumetric Medical Image Segmentation
-This repository is the official implementation of _AdaWAC: Adaptively Weighted Augmentation Consistency Regularization for Volumetric Medical Image Segmentation_
+# AdaWAC: Adaptively Weighted Data Augmentation Consistency Regularization for Robust Optimization under Concept Shift
+This repository is the official implementation of _Adaptively Weighted Data Augmentation Consistency Regularization for Robust Optimization under Concept Shift_
 
 
 ## File Organization
