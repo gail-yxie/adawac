@@ -1,4 +1,4 @@
-# Code adapted from: https://github/qubvel/segmentation_models.pytorch/tree/master/segmentation_models_pytorch/
+# Code adapted from: https://github.com/qubvel/segmentation_models.pytorch
 import numpy as np
 import torch
 import torch.nn as nn

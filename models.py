@@ -55,80 +55,63 @@ class UNETS_AW_AC(nn.Module):
         loss_dice2 = self.dice_loss(logits2, y2, softmax=True)
         loss_dice = (loss_dice1 + loss_dice2) * 0.5  # (B,)
 
-        # srw-dac
+        # dac
         dac_reg = torch.zeros_like(loss_ce)
-        weights = self.weights[idx1].clone().detach()  # (B,2)
-
-        loss_ce_ = loss_ce.clone().detach()
-        dac_reg_ = dac_reg.clone().detach()  # if not dac, it's zeros
-        batch_num = x1.shape[0]
-        mask = None
-
         if self.config.dac:
-            # dac only
             for i in range(len(self.dac_coef)):
                 dac_reg += (
                     torch.mean(self.dac_loss(latents1[i], latents2[i]), dim=[1, 2, 3])
                     * self.dac_coef[i]
                 )
-            dac_reg_ = dac_reg.clone().detach()
-            # mask = torch.ones(batch_num).cuda()
-
-            # different losses with dac
-            if self.config.loss == "adawac":
-                weights = self.update_weights(weights, loss_ce_, dac_reg_)
-                self.weights[idx1] = weights
-            elif self.config.loss in ["trim-train",'pseudo']:
-                label_sum = torch.sum(y1, dim=[1, 2]).clone().detach()
-                mask = label_sum.gt(0).to(torch.float32)
-            elif self.config.loss == "trim-ratio":
-                thre = torch.quantile(loss_ce_, self.ratio)
-                mask = loss_ce_.gt(thre).to(torch.float32)
-
-            if self.config.loss=='pseudo':
-                assert mask is not None
-                loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * (loss_ce * mask + dac_reg * (1.0-mask))
-            elif "trim" in self.config.loss:  # without mask version
-                assert mask is not None
-                batch_num = sum(mask).item()  # type: ignore
-                loss = (
-                    self.config.dice_ratio * loss_dice
-                    + (1.0 - self.config.dice_ratio) * (loss_ce + dac_reg) / 2.0
-                ) * mask
-            else: # adawac/dac-only
-                loss = (
-                    self.config.dice_ratio * loss_dice
-                    + (1.0 - self.config.dice_ratio) * (loss_ce * weights[:, 0]
-                    + dac_reg * weights[:, 1])
-                )
-
-        elif self.config.loss == "reweight-only":
+        
+        # clone
+        loss_ce_ = loss_ce.clone().detach()
+        dac_reg_ = dac_reg.clone().detach()  # if not dac, it's zeros
+        batch_num = x1.shape[0]
+        
+        # weights
+        weights = self.weights[idx1].clone().detach()  # (B,2)
+        if self.config.loss == "adawac":
+            weights = self.update_weights(weights, loss_ce_, dac_reg_)
+            self.weights[idx1] = weights
+        
+        # mask
+        if self.config.loss in ["trim-train",'pseudo']:
+            label_sum = torch.sum(y1, dim=[1, 2]).clone().detach()
+            mask = label_sum.gt(0).to(torch.float32)
+        elif self.config.loss == "trim-ratio":
+            thre = torch.quantile(loss_ce_, self.ratio)
+            mask = loss_ce_.gt(thre).to(torch.float32)
+        else:
+            mask = torch.ones_like(loss_ce_).to(torch.float32)
+            
+        # losses
+        if self.config.loss=='adawac':
+            loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * (loss_ce * weights[:, 0] + dac_reg * weights[:, 1])
+        elif self.config.loss=="base":
+            loss = self.config.dice_ratio * loss_dice1 + (1.0 - self.config.dice_ratio) * loss_ce1
+        elif self.config.loss=="pair":
+            loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * loss_ce
+        elif self.config.loss=='pseudo':
+            loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * (loss_ce * mask + dac_reg * (1.0-mask))
+        elif self.config.loss in ["trim-train", "trim-ratio"]:
+            batch_num = sum(mask).item()
+            if self.config.dac:
+                loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * mask * (loss_ce + dac_reg) / 2.0
+            else:
+                loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * mask * loss_ce
+        elif self.config.loss=="reweight-only":
             loss_ce1_ = loss_ce1.clone().detach()
             weights = self.update_weights(weights, loss_ce1_, 0.0)
             self.weights[idx1, 0] = weights[:, 0]
-            loss = (
-                self.config.dice_ratio * loss_dice1
-                + (1.0 - self.config.dice_ratio) * loss_ce1 * weights[:, 0]
-            )
-        elif self.config.loss == "base":
-            loss = (
-                self.config.dice_ratio * loss_dice1
-                + (1.0 - self.config.dice_ratio) * loss_ce1
-            )
-        elif self.config.loss == "pair":
-            loss = (
-                self.config.dice_ratio * loss_dice
-                + (1.0 - self.config.dice_ratio) * loss_ce
-            )
+            loss = self.config.dice_ratio * loss_dice1 + (1.0 - self.config.dice_ratio) * loss_ce1 * weights[:, 0]
+        elif self.config.loss=='dac-only':
+            loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * (loss_ce + dac_reg) / 2.0
         else:
             raise ValueError("Unknown loss type: {}".format(self.config.loss))
 
-        if "trim" in self.config.loss:
-            loss = (
-                torch.sum(loss) / batch_num if batch_num != 0 else 0.0 * torch.sum(loss)
-            )
-        else:
-            loss = torch.mean(loss)
+        loss = torch.sum(loss) / batch_num if batch_num != 0 else 0.0 * torch.sum(loss)
+        
         loss_dice_ = loss_dice.clone().detach()
         weights_ = weights.clone().detach()
         logits1_ = logits1.clone().detach()

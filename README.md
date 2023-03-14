@@ -38,7 +38,8 @@ pip install -r requirements.txt
 
 ## Reproducing Main Experiments:
 ```python
-bash reproduce.sh
+bash run_transunet.sh
+bash run_unet.sh
 ```
 
 

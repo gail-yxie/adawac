@@ -99,7 +99,7 @@ def test_single_volume(
             7:'spleen', 
             8:'stomach',
         }
-        for i in range(0, prediction.shape[0], prediction.shape[0]//30):
+        for i in range(0, prediction.shape[0], max(prediction.shape[0]//30, 1)):
             mask_img = wandb.Image(image[i], masks={
                 "predictions": {
                     "mask_data": prediction[i].astype(int),
