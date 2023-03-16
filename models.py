@@ -100,11 +100,13 @@ class UNETS_AW_AC(nn.Module):
                 loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * mask * (loss_ce + dac_reg) / 2.0
             else:
                 loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * mask * loss_ce
-        elif self.config.loss=="reweight-only":
+        elif self.config.loss in ["reweight-only", "pm-dro"]:
             loss_ce1_ = loss_ce1.clone().detach()
+            if self.config.loss=="pm-dro":
+                weights = torch.pow(weights, 1.0 - self.config.lr_w * self.config.entropy_max)
             weights = self.update_weights(weights, loss_ce1_, 0.0)
             self.weights[idx1, 0] = weights[:, 0]
-            loss = self.config.dice_ratio * loss_dice1 + (1.0 - self.config.dice_ratio) * loss_ce1 * weights[:, 0]
+            loss = self.config.dice_ratio * loss_dice1 + (1.0 - self.config.dice_ratio) * loss_ce1 * weights[:, 0]            
         elif self.config.loss=='dac-only':
             loss = self.config.dice_ratio * loss_dice + (1.0 - self.config.dice_ratio) * (loss_ce + dac_reg) / 2.0
         else:

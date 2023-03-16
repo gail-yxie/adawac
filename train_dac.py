@@ -52,9 +52,10 @@ def train():
 
     # loss
     parser.add_argument('--loss', type=str, default='base', 
-                        choices=['base', 'pair', 'adawac', 'trim-ratio', 'trim-train', 'pseudo', 'reweight-only', 'dac-only'], help='loss function')
+                        choices=['base', 'pair', 'adawac', 'trim-ratio', 'trim-train', 'pseudo', 'reweight-only', 'dac-only', 'pm-dro'], help='loss function')
     parser.add_argument('--trim-ratio', type=float, default=0.4210764360018091, help='trim ratio for trim-ratio loss, default for Synapse')
     parser.add_argument('--dice-ratio', type=float, default=0.5, help='ratio for dice loss')
+    parser.add_argument('--entropy-max', type=float, default=0.0, help='regularization hyper-parameter for the entropy maximization term on sample weights: total_loss = l_ce + l_ac + entropy_max * H(sample_weights); for percentile-minimization DRO (loss=pm-dro); expect entropy_max * lr_w < 1.0. The original paper [Fidon et al., 2021](http://arxiv.org/abs/2108.04175) uses 0.01.')
     
     # adaptive weighted agumentation consistency
     parser.add_argument('--dac', action='store_true', help='use DAC')

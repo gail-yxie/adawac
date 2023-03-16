@@ -38,6 +38,8 @@ CUDA_VISIBLE_DEVICES=0 python train_dac.py --dataset $DATASET --model $MODEL --e
 # Ablation
 # reweight-only
 CUDA_VISIBLE_DEVICES=0 python train_dac.py --dataset $DATASET --model $MODEL --epochs $EPOCHS --lr $LR --loss reweight-only --seed $SEED
+# percentile minimization DRO (reweight-only + entropy maximization)
+CUDA_VISIBLE_DEVICES=0 python train_dac.py --dataset $DATASET --model $MODEL --epochs $EPOCHS --lr $LR --loss pm-dro --entropy-max 0.01 --seed $SEED
 # ARC-only
 CUDA_VISIBLE_DEVICES=0 python train_dac.py --dataset $DATASET --model $MODEL --epochs $EPOCHS --lr $LR --loss dac-only --dac --dac-encoder $DAC_EN --seed $SEED
 # adawac
