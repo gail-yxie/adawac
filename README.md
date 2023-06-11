@@ -1,5 +1,9 @@
 # AdaWAC: Adaptively Weighted Data Augmentation Consistency Regularization for Robust Optimization under Concept Shift
-This repository is the official implementation of _Adaptively Weighted Data Augmentation Consistency Regularization for Robust Optimization under Concept Shift_
+This repository presents code for our [paper](https://arxiv.org/abs/2210.01891):
+```
+Adaptively Weighted Data Augmentation Consistency Regularization for Robust Optimization under Concept Shift.
+Yijun Dong*, Yuege Xie*, Rachel Ward. ICML 2023.
+```
 
 
 ## File Organization
